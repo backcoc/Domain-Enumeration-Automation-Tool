@@ -1,94 +1,74 @@
-# 🌐 Domain Enumeration Automation Tool
+# 🌐 Advanced Domain Enumeration Tool
 
-## 🚀 Overview
-This comprehensive domain enumeration script automates the process of discovering and mapping subdomains using multiple powerful reconnaissance tools.
+## 🚀 Enhanced Features
+- Multiple Authentication Methods
+- Flexible Reconnaissance Modes
+- Comprehensive Scanning Capabilities
+- Logging and Result Tracking
 
-## ✨ Features
-- Multi-tool domain identification
-- Automatic dependency management
-- Supports single and multiple domain enumeration
-- Multiple output format support (txt, csv, json, xml)
-- Detailed logging
-- Resume functionality
-- Error handling and colorful console output
+## 🔐 Authentication Methods
+1. Basic Authentication (Username/Password)
+2. Cookie-based Authentication
+3. API Token Authentication
+4. No Authentication Option
 
-## 📋 Prerequisites
-- Linux environment (Ubuntu recommended)
-- Bash shell
-- Internet connection
-- Basic networking tools
+## 🕵️ Reconnaissance Modes
+1. Basic Subdomain Enumeration
+2. Advanced Network Scanning
+3. Web Technology Detection
+4. Vulnerability Scanning
+5. Custom Recon Mode
 
-## 🛠 Installation
+## 🛠 Prerequisites
+- Linux/Unix Environment
+- Bash 4.0+
+- Tools:
+  - amass
+  - subfinder
+  - httpx
+  - nuclei
+  - nmap
+  - curl
+  - jq
 
-### 1. Clone the Repository
+## 📦 Installation
 ```bash
 git clone https://github.com/backcoc/Domain-Enumeration-Automation-Tool.git
 cd Domain-Enumeration-Automation-Tool/
-```
-
-### 2. Make Script Executable
-```bash
 chmod +x domain_enum.sh
 ```
 
-## 🔧 Usage Modes
-
-### Single Domain Enumeration
+## 🚀 Usage
 ```bash
-./domain_enum.sh target.com
+./domain_enum.sh
 ```
 
-### Multiple Domains Enumeration
-1. Create a text file (e.g., `domains.txt`) with domains:
-```
-target1.com
-target2.com
-target3.com
-```
+### Interactive Menu
+1. Configure Authentication
+2. Select Reconnaissance Mode
+3. Start Domain Enumeration
+4. View Previous Logs
 
-2. Run the script with the domains file:
-```bash
-./domain_enum.sh -f domains.txt
-```
+### Input Options
+- Single domain
+- Multiple domains from file
+- Advanced configuration
 
-## 📂 Output Structure
-- Results stored in `~/domain_enum_logs/`
-- Timestamped folders for each enumeration session
-- Formats: .txt, .csv, .json, .xml
+## 📂 Output
+- Logs stored in `~/advanced_domain_enum_logs/`
+- Timestamped result files
+- Comprehensive scanning reports
 
-## 🛡 Supported Tools
-- Amass
-- Subfinder
-- Assetfinder
-- HttpX
-- Anew
-
-## 💡 Tips
-- Ensure stable internet connection during first run
-- Script will prompt for dependency installation
-- Check logs for detailed enumeration information
-
-## 🔒 Legal Disclaimer
-- Use only on domains you have permission to test
+## 🔒 Disclaimer
+- Use only on authorized domains
 - Respect legal and ethical boundaries
-- Not responsible for misuse
 
-## 🤝 Contributing
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+## 🤝 Contribution
+1. Fork Repository
+2. Create Feature Branch
+3. Commit Changes
+4. Push to Branch
+5. Create Pull Request
 
 ## 📜 License
 MIT License
-
-## 🐛 Troubleshooting
-- Ensure Go is installed (version 1.16+)
-- Check internet connectivity
-- Verify domain list formatting
-- Review log files for specific errors
-
-## 📞 Support
-Open an issue on GitHub or contact maintainer for support.
-```
