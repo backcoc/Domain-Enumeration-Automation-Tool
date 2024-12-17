@@ -22,7 +22,7 @@ This comprehensive domain enumeration script automates the process of discoverin
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/backcoc/domain-enum-tool.git
+git clone [https://github.com/backcoc/domain-enum-tool.git](https://github.com/backcoc/Domain-Enumeration-Automation-Tool.git)
 cd domain-enum-tool
 ```
 
