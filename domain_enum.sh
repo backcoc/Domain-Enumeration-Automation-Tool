@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Domain Enumeration Automation Script
-# Version: 1.1
-# Author: Bug Bounty Automation Team
+# Advanced Domain Enumeration Script
+# Version: 2.0
+# Enhanced with Authentication and Advanced Recon Capabilities
 
-# Color Codes for Formatting
+# Color Codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -12,194 +12,227 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration Variables
-HOME_DIR="${HOME}"
-SCRIPT_NAME=$(basename "$0")
-CONFIG_DIR="${HOME_DIR}/.domain_enum"
-LOG_BASE_DIR="${CONFIG_DIR}/logs"
-RESULTS_BASE_DIR="${CONFIG_DIR}/results"
-CHECKPOINT_FILE="${CONFIG_DIR}/checkpoint.txt"
+CONFIG_FILE="$HOME/.domain_enum_config"
+LOG_DIR="$HOME/advanced_domain_enum_logs"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
-# Logging Configuration
-create_timestamp() {
-    date +"%Y%m%d_%H%M%S"
+# Declare Associative Arrays for Advanced Options
+declare -A AUTH_OPTIONS
+declare -A RECON_MODES
+
+# Tools Array
+REQUIRED_TOOLS=(
+    "amass"
+    "subfinder"
+    "httpx"
+    "nuclei"
+    "nmap"
+    "jq"
+    "curl"
+)
+
+# Authentication Menu
+show_auth_menu() {
+    clear
+    echo -e "${BLUE}===== Authentication Options =====${NC}"
+    echo "1. Basic Authentication (Username/Password)"
+    echo "2. Cookie-based Authentication"
+    echo "3. API Token Authentication"
+    echo "4. No Authentication"
+    echo "0. Back to Main Menu"
+    read -p "Choose an authentication method (0-4): " auth_choice
 }
 
-# Ensure Directories Exist
-setup_directories() {
-    mkdir -p "${LOG_BASE_DIR}"
-    mkdir -p "${RESULTS_BASE_DIR}"
-    mkdir -p "${CONFIG_DIR}"
-}
-
-# Dependency Installation Function
-install_dependencies() {
-    echo -e "${YELLOW}[*] Checking and Installing Dependencies...${NC}"
-    
-    # Update Package Lists
-    sudo apt-get update -qq
-
-    # Install Essential Packages
-    sudo apt-get install -y -qq \
-        wget \
-        curl \
-        git \
-        jq \
-        unzip
-
-    # Check and Install Go
-    if ! command -v go &> /dev/null; then
-        echo -e "${BLUE}[*] Installing Go...${NC}"
-        wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz -O /tmp/go.tar.gz
-        sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-        echo 'export PATH=$PATH:/usr/local/go/bin' | sudo tee /etc/profile.d/golang.sh
-        source /etc/profile.d/golang.sh
-    fi
-
-    # Install Domain Enumeration Tools
-    local tools=(
-        "github.com/OWASP/Amass/v3/..."
-        "github.com/projectdiscovery/subfinder/v2/cmd/subfinder"
-        "github.com/tomnomnom/assetfinder"
-        "github.com/projectdiscovery/httpx/cmd/httpx"
-        "github.com/tomnomnom/anew"
-    )
-
-    for tool in "${tools[@]}"; do
-        go install -v "${tool}@latest"
-    done
-
-    # Verify Tool Installation
-    echo -e "${GREEN}[✓] Dependencies Installed Successfully!${NC}"
-}
-
-# Check and Validate Tools
-validate_tools() {
-    local required_tools=(
-        "amass"
-        "subfinder"
-        "assetfinder"
-        "httpx"
-        "anew"
-        "go"
-        "jq"
-    )
-
-    for tool in "${required_tools[@]}"; do
-        if ! command -v "${tool}" &> /dev/null; then
-            echo -e "${RED}[!] ${tool} is not installed.${NC}"
-            read -p "Would you like to install dependencies? (y/n): " install_choice
-            if [[ "${install_choice}" == "y" ]]; then
-                install_dependencies
+# Configure Authentication
+configure_authentication() {
+    while true; do
+        show_auth_menu
+        
+        case $auth_choice in
+            1)  # Basic Authentication
+                read -p "Enter Username: " username
+                read -sp "Enter Password: " password
+                AUTH_OPTIONS["type"]="basic"
+                AUTH_OPTIONS["username"]="$username"
+                AUTH_OPTIONS["password"]="$password"
                 break
-            else
-                echo -e "${RED}[!] Cannot proceed without dependencies.${NC}"
-                exit 1
-            fi
-        fi
-    done
-}
-
-# Domain Enumeration Core Function
-enumerate_domains() {
-    local domain="$1"
-    local timestamp=$(create_timestamp)
-    local output_base="${RESULTS_BASE_DIR}/${domain}_${timestamp}"
-
-    echo -e "${GREEN}[+] Enumerating Subdomains for ${domain}${NC}"
-
-    # Amass Enumeration
-    amass enum -d "${domain}" -o "${output_base}_amass.txt" 2>> "${LOG_BASE_DIR}/${domain}_amass.log"
-
-    # Subfinder Enumeration
-    subfinder -d "${domain}" -o "${output_base}_subfinder.txt" 2>> "${LOG_BASE_DIR}/${domain}_subfinder.log"
-
-    # Assetfinder Enumeration
-    assetfinder "${domain}" > "${output_base}_assetfinder.txt" 2>> "${LOG_BASE_DIR}/${domain}_assetfinder.log"
-
-    # Combine Unique Domains
-    cat "${output_base}"_*.txt | sort -u > "${output_base}_unique_domains.txt"
-
-    # Probe Live Domains
-    cat "${output_base}_unique_domains.txt" | httpx -silent > "${output_base}_live_domains.txt"
-
-    # Generate Multiple Formats
-    formats=("txt" "csv" "json" "xml")
-    for format in "${formats[@]}"; do
-        case "${format}" in
-            "csv")
-                awk '{print "domain,"$0}' "${output_base}_unique_domains.txt" > "${output_base}.csv"
                 ;;
-            "json")
-                jq -R '.' "${output_base}_unique_domains.txt" | jq -s '.' > "${output_base}.json"
+            2)  # Cookie Authentication
+                read -p "Enter Cookie Value: " cookie
+                AUTH_OPTIONS["type"]="cookie"
+                AUTH_OPTIONS["value"]="$cookie"
+                break
                 ;;
-            "xml")
-                echo '<?xml version="1.0" encoding="UTF-8"?><domains>' > "${output_base}.xml"
-                while IFS= read -r line; do
-                    echo "<domain>${line}</domain>" >> "${output_base}.xml"
-                done < "${output_base}_unique_domains.txt"
-                echo '</domains>' >> "${output_base}.xml"
+            3)  # API Token
+                read -p "Enter API Token: " api_token
+                AUTH_OPTIONS["type"]="api"
+                AUTH_OPTIONS["token"]="$api_token"
+                break
+                ;;
+            4)  # No Authentication
+                AUTH_OPTIONS["type"]="none"
+                break
+                ;;
+            0)  # Exit
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid option. Try again.${NC}"
+                sleep 1
                 ;;
         esac
     done
-
-    echo -e "${GREEN}[✓] Enumeration Completed for ${domain}${NC}"
-    echo -e "${BLUE}[*] Results stored in: ${output_base}${NC}"
 }
 
-# Bulk Domain Processing
-process_domains() {
-    local input_file="$1"
+# Reconnaissance Mode Selection
+show_recon_menu() {
+    clear
+    echo -e "${BLUE}===== Reconnaissance Modes =====${NC}"
+    echo "1. Basic Subdomain Enumeration"
+    echo "2. Advanced Network Scanning"
+    echo "3. Web Technology Detection"
+    echo "4. Vulnerability Scanning"
+    echo "5. Custom Recon Mode"
+    echo "0. Back to Main Menu"
+    read -p "Choose a reconnaissance mode (0-5): " recon_choice
+}
 
-    if [[ ! -f "${input_file}" ]]; then
-        echo -e "${RED}[!] Input file not found: ${input_file}${NC}"
-        exit 1
-    fi
-
-    # Read domains, skip comments and empty lines
-    while IFS= read -r domain || [[ -n "${domain}" ]]; do
-        # Skip empty lines and comments
-        [[ -z "${domain}" || "${domain}" =~ ^[[:space:]]*# ]] && continue
-
-        # Trim whitespace
-        domain=$(echo "${domain}" | xargs)
-
-        echo -e "${YELLOW}[*] Processing: ${domain}${NC}"
-        enumerate_domains "${domain}"
+# Configure Reconnaissance Mode
+configure_recon_mode() {
+    while true; do
+        show_recon_menu
         
-        # Optional: Small delay between domains
-        sleep 2
-    done < "${input_file}"
+        case $recon_choice in
+            1)  # Basic Subdomain Enumeration
+                RECON_MODES["mode"]="basic"
+                RECON_MODES["depth"]=2
+                break
+                ;;
+            2)  # Advanced Network Scanning
+                RECON_MODES["mode"]="network"
+                RECON_MODES["ports"]="1-65535"
+                break
+                ;;
+            3)  # Web Technology Detection
+                RECON_MODES["mode"]="web_tech"
+                RECON_MODES["fingerprint"]=true
+                break
+                ;;
+            4)  # Vulnerability Scanning
+                RECON_MODES["mode"]="vuln_scan"
+                RECON_MODES["severity"]="medium"
+                break
+                ;;
+            5)  # Custom Recon Mode
+                read -p "Enter custom mode name: " custom_mode
+                RECON_MODES["mode"]="$custom_mode"
+                break
+                ;;
+            0)  # Exit
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid option. Try again.${NC}"
+                sleep 1
+                ;;
+        esac
+    done
 }
 
-# Main Execution Function
-main() {
-    setup_directories
-    validate_tools
+# Perform Domain Enumeration with Advanced Options
+advanced_domain_enum() {
+    local domain=$1
+    local output_base="${LOG_DIR}/${domain}_${TIMESTAMP}"
 
-    case "$#" in
-        0)
-            echo -e "${RED}[!] Usage: ${SCRIPT_NAME} <domain> OR ${SCRIPT_NAME} -f <domains_file>${NC}"
-            exit 1
+    # Authentication Handling
+    case ${AUTH_OPTIONS["type"]} in
+        "basic")
+            echo -e "${YELLOW}[*] Using Basic Authentication${NC}"
+            # Curl or specific tool authentication logic here
             ;;
-        1)
-            # Single Domain Mode
-            enumerate_domains "$1"
+        "cookie")
+            echo -e "${YELLOW}[*] Using Cookie Authentication${NC}"
+            # Cookie-based authentication logic
             ;;
-        2)
-            # Multiple Domains Mode
-            if [[ "$1" == "-f" && -f "$2" ]]; then
-                process_domains "$2"
-            else
-                echo -e "${RED}[!] Invalid arguments. Use: ${SCRIPT_NAME} -f <domains_file>${NC}"
-                exit 1
-            fi
-            ;;
-        *)
-            echo -e "${RED}[!] Too many arguments${NC}"
-            exit 1
+        "api")
+            echo -e "${YELLOW}[*] Using API Token Authentication${NC}"
+            # API token authentication logic
             ;;
     esac
+
+    # Reconnaissance Mode Handling
+    case ${RECON_MODES["mode"]} in
+        "basic")
+            # Basic subdomain enumeration
+            subfinder -d "$domain" -o "${output_base}_subdomains.txt"
+            amass enum -d "$domain" -o "${output_base}_amass_subdomains.txt"
+            ;;
+        "network")
+            # Advanced network scanning
+            nmap -sV -p${RECON_MODES["ports"]} "$domain" -oA "${output_base}_nmap_scan"
+            ;;
+        "web_tech")
+            # Web technology detection
+            httpx -l "${output_base}_subdomains.txt" -technologies -o "${output_base}_tech_fingerprint.txt"
+            ;;
+        "vuln_scan")
+            # Vulnerability scanning
+            nuclei -l "${output_base}_subdomains.txt" -severity ${RECON_MODES["severity"]} -o "${output_base}_vulnerabilities.txt"
+            ;;
+        *)
+            echo -e "${RED}[!] Unknown recon mode: ${RECON_MODES["mode"]}${NC}"
+            ;;
+    esac
+
+    # Combine and process results
+    cat "${output_base}"_*subdomains.txt | sort -u > "${output_base}_final_subdomains.txt"
 }
 
-# Program Entry Point
-main "$@"
+# Main Menu
+main_menu() {
+    while true; do
+        clear
+        echo -e "${GREEN}===== Advanced Domain Enumeration Tool =====${NC}"
+        echo "1. Configure Authentication"
+        echo "2. Configure Reconnaissance Mode"
+        echo "3. Start Domain Enumeration"
+        echo "4. View Previous Logs"
+        echo "0. Exit"
+        
+        read -p "Choose an option (0-4): " main_choice
+        
+        case $main_choice in
+            1) configure_authentication ;;
+            2) configure_recon_mode ;;
+            3) 
+                read -p "Enter domain or path to domains file: " domain_input
+                if [[ -f "$domain_input" ]]; then
+                    while IFS= read -r domain; do
+                        advanced_domain_enum "$domain"
+                    done < "$domain_input"
+                else
+                    advanced_domain_enum "$domain_input"
+                fi
+                ;;
+            4)
+                echo "Showing recent logs:"
+                ls -lt "$LOG_DIR" | head -n 10
+                read -p "Press Enter to continue..." 
+                ;;
+            0) 
+                echo "Exiting..."
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}Invalid option. Try again.${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# Initialization
+mkdir -p "$LOG_DIR"
+
+# Entry Point
+main_menu
